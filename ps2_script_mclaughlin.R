@@ -91,3 +91,36 @@ unemp_top_decreases_no_covid <- unemp |>
   group_by(region) |>
   slice_min(unemployment_rate_change, n = 5, with_ties = TRUE)
 
+#5.1
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +
+  labs(title = "Unemployment Over Time by Region", x = "Date", y = "Unemployment Rate") +
+  theme_minimal()
+
+#5.2
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +
+  facet_wrap(~region) +
+  labs(title = "Unemployment Over Time by Region", x = "Date", y = "Unemployment Rate") +
+  theme_minimal()
+
+#5.3
+ggplot(unemp_summary, aes(x = fct_reorder(region, mean_rate, .desc = TRUE),
+                          y = mean_rate,
+                          fill = region)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Mean Unemployment by Region", x = "Region", y = "Mean Unemployment Rate") +
+  theme_minimal()
+
+#5.4
+ggplot(unemp_recent, aes(x = date, y = unemployment_rate_change, color = region)) +
+  geom_line() +
+  labs(title = "Change in Unemployment Over Time by Region", x = "Date", y = "Change in Unemployment Rate") +
+  theme_minimal()
+
+#i like this graph because it puts into perspective the scale of impact on 
+#employment. its kind of funny how the 5 years before and after 2020 look
+#basically flat compared to the spike. it also kind of looks like a heartbeat. 
+
+
+

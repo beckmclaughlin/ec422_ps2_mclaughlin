@@ -2,6 +2,22 @@
 library(tidyquant)
 library(tidyverse)
 
+unemp_raw <- tq_get(
+  c("UNRATE", "ORUR", "CAUR", "TXUR", "NYUR"),
+  get  = "economic.data",
+  from = "1976-01-01"
+)
+
+head(unemp_raw)
+
+dir.create("data", showWarnings = FALSE)
+
+write_rds(unemp_raw, "data/unemp_raw.rds")
+
+
+library(tidyquant)
+library(tidyverse)
+
 # unemp_raw <- tq_get(
 #   c("UNRATE", "ORUR", "CAUR", "TXUR", "NYUR"),
 #   get  = "economic.data",
@@ -121,6 +137,5 @@ ggplot(unemp_recent, aes(x = date, y = unemployment_rate_change, color = region)
 #i like this graph because it puts into perspective the scale of impact on 
 #employment. its kind of funny how the 5 years before and after 2020 look
 #basically flat compared to the spike. it also kind of looks like a heartbeat. 
-
 
 

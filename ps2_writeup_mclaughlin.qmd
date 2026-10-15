@@ -1,0 +1,177 @@
+---
+title: "Problem Set 2"
+author: "Beck McLaughlin"
+date: today
+format:
+  html:
+    toc: true
+    embed-resources: true
+---
+
+**GitHub repo:** <https://github.com/beckmclaughlin/ec422_ps2_mclaughlin>
+
+## Data
+
+The data is monthly unemployment rate stats dating back to 1976 through present day, for California, Oregon, Texas, New York, and the entire United States. It comes from the Federal Reserve.
+
+```{r}
+library(tidyquant)
+library(tidyverse)
+library(knitr)
+library(here)
+
+unemp_raw = read_rds("data/unemp_raw.rds")
+```
+
+## Wrangling
+
+```{r}
+# 4.1 Clean up the data
+unemp <- unemp_raw |>
+  rename(unemployment_rate = price) |>
+  mutate(
+    region = case_when(
+      symbol == "UNRATE" ~ "United States",
+      symbol == "ORUR"    ~ "Oregon",
+      symbol == "CAUR" ~ "California",
+      symbol == "TXUR" ~ "Texas",
+      symbol == "NYUR" ~ "New York"
+    )
+  )
+
+# 4.2 Filling in Oct 2025
+unemp <- unemp |>
+  arrange(region, date) |>
+  group_by(region) |>
+  mutate(
+    unemployment_rate = replace(
+      unemployment_rate,
+      date == as.Date("2025-10-01"),
+      unemployment_rate[date == as.Date("2025-09-01")]
+    )
+  ) |>
+  ungroup()
+
+# Adding unemployment rate change column
+unemp <- unemp |>
+  arrange(region, date) |>
+  group_by(region) |>
+  mutate(unemployment_rate_change = unemployment_rate - lag(unemployment_rate)) |>
+  ungroup()
+
+# Unemp recent
+unemp_recent <- unemp |>
+  filter(date >= as.Date("2015-01-01"))
+
+# Summarizations
+unemp_summary <- unemp |>
+  group_by(region) |>
+  summarize(
+    mean_rate = mean(unemployment_rate, na.rm = TRUE),
+    min_rate  = min(unemployment_rate,  na.rm = TRUE),
+    max_rate  = max(unemployment_rate,  na.rm = TRUE)
+  )
+
+unemp_recent_summary_ <- unemp_recent |>
+  group_by(region) |>
+  summarize(
+    mean_rate = mean(unemployment_rate, na.rm = TRUE),
+    min_rate  = min(unemployment_rate,  na.rm = TRUE),
+    max_rate  = max(unemployment_rate,  na.rm = TRUE)
+  )
+
+# 4.3 Extremes
+unemp_top_increases <- unemp |>
+  group_by(region) |>
+  slice_max(unemployment_rate_change, n = 5, with_ties = TRUE)
+
+unemp_top_decreases <- unemp |>
+  group_by(region) |>
+  slice_min(unemployment_rate_change, n = 5, with_ties = TRUE)
+
+# 4.4 Extremes excluding 2020
+unemp_top_increases_no_covid <- unemp |>
+  filter(year(date) != 2020) |>
+  group_by(region) |>
+  slice_max(unemployment_rate_change, n = 5, with_ties = TRUE)
+
+unemp_top_decreases_no_covid <- unemp |>
+  filter(year(date) != 2020) |>
+  group_by(region) |>
+  slice_min(unemployment_rate_change, n = 5, with_ties = TRUE)
+```
+
+This table is showing the mean, maximum, and minimum for the unemployment rates for the 5 different regions, over the entire data set of 50 years
+
+```{r}
+kable(unemp_summary)
+```
+
+This table is showing the same as the above, the mean, maximum and minimum of the data for each region, but this time only going back to 2015, instead of 1976.
+
+```{r}
+kable(unemp_recent_summary_)
+```
+
+This table is showing the 5 largest increases in unemployment, for each of the 5 regions. The year 2020 is excluded, because it is much higher than all the other values.
+
+```{r}
+kable(unemp_top_increases_no_covid)
+```
+
+This table is showing the same thing as the one above it, excpet it is decreases in unemployment instead of increases.
+
+```{r}
+kable(unemp_top_decreases_no_covid)
+```
+
+## Visualization
+
+### Unemployment Over Time by Region
+
+```{r}
+# 5.1
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +
+  labs(title = "Unemployment Over Time by Region", x = "Date", y = "Unemployment Rate") +
+  theme_minimal()
+```
+
+### Unemployment Over Time, Separate Panels by Region
+
+```{r}
+# 5.2
+ggplot(unemp, aes(x = date, y = unemployment_rate, color = region)) +
+  geom_line() +
+  facet_wrap(~region) +
+  labs(title = "Unemployment Over Time by Region", x = "Date", y = "Unemployment Rate") +
+  theme_minimal()
+```
+
+### Mean Unemployment Rate by Region
+
+```{r}
+# 5.3
+ggplot(unemp_summary, aes(x = fct_reorder(region, mean_rate, .desc = TRUE),
+                          y = mean_rate,
+                          fill = region)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Mean Unemployment by Region", x = "Region", y = "Mean Unemployment Rate") +
+  theme_minimal()
+```
+
+### Change in Unemployment Over Time by Region
+
+I like this graph because it puts into perspective the scale of covids impact on employment. its kind of funny how the 5 years before and after 2020 look basically flat compared to the spike. it also kind of looks like a heartbeat.
+
+```{r}
+# 5.4
+ggplot(unemp_recent, aes(x = date, y = unemployment_rate_change, color = region)) +
+  geom_line() +
+  labs(title = "Change in Unemployment Over Time by Region", x = "Date", y = "Change in Unemployment Rate") +
+  theme_minimal()
+```
+
+## Reflection
+
+This was a fairly straightforward assignment. I was pretty comfortable with most of the data manipulation and wrangling from past classes that have used R, but the graphing stuff was a little more unfamiliar, but nothing I couldnt figure out. I'm definitely more comfortable with Github now then I was before, as this was basically my first time using it.
